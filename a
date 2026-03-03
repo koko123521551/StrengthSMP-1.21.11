@@ -1,0 +1,141 @@
+# Create main folder
+$root = "$env:USERPROFILE\Desktop\StrengthSMP-1.21.11"
+New-Item -ItemType Directory -Force -Path $root
+
+# Create folder structure
+$paths = @(
+"$root\src\main\java\com\strengthsmp",
+"$root\src\main\resources\assets\strengthsmp\lang"
+)
+
+foreach ($path in $paths) {
+    New-Item -ItemType Directory -Force -Path $path
+}
+
+# build.gradle
+@"
+plugins {
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'maven-publish'
+}
+
+group = 'com.strengthsmp'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:1.21.11"
+    mappings "net.fabricmc:yarn:1.21.11+build.1:v2"
+    modImplementation "net.fabricmc:fabric-loader:0.15.11"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.101.0"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+"@ | Set-Content "$root\build.gradle"
+
+# settings.gradle
+'rootProject.name = "StrengthSMP"' | Set-Content "$root\settings.gradle"
+
+# gradle.properties
+'org.gradle.jvmargs=-Xmx2G' | Set-Content "$root\gradle.properties"
+
+# fabric.mod.json
+@"
+{
+  "schemaVersion": 1,
+  "id": "strengthsmp",
+  "version": "1.0.0",
+  "name": "Strength SMP Mod",
+  "description": "Lifesteal and custom weapons",
+  "authors": ["You"],
+  "entrypoints": {
+    "main": [
+      "com.strengthsmp.StrengthSMP"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "1.21.11",
+    "fabric-api": "*"
+  }
+}
+"@ | Set-Content "$root\src\main\resources\fabric.mod.json"
+
+# StrengthSMP.java
+@"
+package com.strengthsmp;
+
+import net.fabricmc.api.ModInitializer;
+
+public class StrengthSMP implements ModInitializer {
+
+    @Override
+    public void onInitialize() {
+        ModItems.registerItems();
+        System.out.println("Strength SMP Loaded!");
+    }
+}
+"@ | Set-Content "$root\src\main\java\com\strengthsmp\StrengthSMP.java"
+
+# ModItems.java
+@"
+package com.strengthsmp;
+
+import net.minecraft.item.*;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.util.Identifier;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.World;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+
+public class ModItems {
+
+    public static final Item VAMPIRE_BLADE = new SwordItem(ToolMaterials.NETHERITE, 6, -2.4F,
+            new Item.Settings()) {
+        @Override
+        public boolean postHit(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+            if (attacker instanceof PlayerEntity player) {
+                player.heal(4.0F);
+            }
+            return super.postHit(stack, target, attacker);
+        }
+    };
+
+    public static final Item BERSERKER_SWORD = new SwordItem(ToolMaterials.NETHERITE, 7, -2.4F,
+            new Item.Settings()) {
+        @Override
+        public void inventoryTick(ItemStack stack, World world, net.minecraft.entity.Entity entity,
+                                  int slot, boolean selected) {
+            if (entity instanceof PlayerEntity player) {
+                if (player.getHealth() <= player.getMaxHealth() * 0.3) {
+                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 40, 1));
+                }
+            }
+            super.inventoryTick(stack, world, entity, slot, selected);
+        }
+    };
+
+    public static void registerItems() {
+        Registry.register(Registries.ITEM, new Identifier("strengthsmp", "vampire_blade"), VAMPIRE_BLADE);
+        Registry.register(Registries.ITEM, new Identifier("strengthsmp", "berserker_sword"), BERSERKER_SWORD);
+    }
+}
+"@ | Set-Content "$root\src\main\java\com\strengthsmp\ModItems.java"
+
+# Language file
+@"
+{
+  "item.strengthsmp.vampire_blade": "Vampire Blade",
+  "item.strengthsmp.berserker_sword": "Berserker Sword"
+}
+"@ | Set-Content "$root\src\main\resources\assets\strengthsmp\lang\en_us.json"
+
+Write-Host "DONE! Project created on your Desktop: StrengthSMP-1.21.11"
