@@ -1,0 +1,6 @@
+settings.gradle
+gradle.properties
+src/main/java/com/strengthsmp/StrengthSMP.java
+src/main/java/com/strengthsmp/ModItems.java
+src/main/resources/fabric.mod.json
+src/main/resources/assets/strengthsmp/lang/en_us.json
